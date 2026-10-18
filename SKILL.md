@@ -67,9 +67,9 @@ C:\ProgramData\Package Cache
 C:\Windows\Installer
 ```
 
-### 顺手要拿的三类元信息
+### 要拿的三类核心信息
 
-1. **junction / symlink**：`Get-ChildItem -Force -Directory | Where LinkType -ne $null`。用户常把大目录迁走（如 `.codex -> E:\...`、`Documents\Tencent Files -> D:\...`），避免误报成 C 盘占用。
+1. **junction / symlink**：`Get-ChildItem -Force -Directory | Where LinkType -ne $null`。用户如果把大目录迁走（如 `.codex -> E:\...`、`Documents\Tencent Files -> D:\...`），避免误报成 C 盘占用。
    - 别名链接也要识别：`C:\Users\All Users` 实为 `C:\ProgramData` 的别名，大小会和 ProgramData 重复。
    - 副作用可当线索：逐子目录求和时**会跟随 junction**，而 `-Recurse` 的父目录总和不跟随 → 出现"子目录比父目录大"就是 junction。
 2. **总体容量**：`Get-CimInstance Win32_LogicalDisk -Filter "DriveType=3"`（bash 的 `df -h` 也可以，更省事）。
@@ -91,9 +91,7 @@ C:\Windows\Installer
 - 遇到"看不出是什么软件"的大目录（例如 `%LOCALAPPDATA%\<GUID>\<哈希>-<原文件名>.exe` 这种形态），不要猜死，报事实（大小、文件数、创建/最后写入时间、属主）并建议**先改名观察一周**。
 - 报告里给出保守可回收合计 + 进一步可释放合计，并给执行顺序。
 
-## 执行清理的实战坑（2026-10 实测）
-
-审查易、执行难。以下坑全部真实踩过：
+## 执行清理的实战坑
 
 1. **删除量 ≠ 释放量：先查回收站**。
    - 删了 15 GB 剩余空间反而变少 → `C:\$Recycle.Bin` 里躺了 13.76 GB（删除钩子把删除都转成了回收站移动）。
