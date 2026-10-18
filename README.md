@@ -1,50 +1,86 @@
 # windows-disk-space-audit
 
+一个 [WorkBuddy](https://www.workbuddy.cn) Agent 技能：**只读审查 Windows 磁盘（尤其 C 盘）空间占用**，产出分级清理报告，并沉淀了执行清理阶段的实战坑。
+
 A [WorkBuddy](https://www.workbuddy.cn) agent skill for **read-only Windows disk space auditing** (focused on the C: drive), with a graded cleanup report and battle-tested execution pitfalls.
 
-一个 WorkBuddy Agent 技能：**只读审查 Windows 磁盘（尤其 C 盘）空间占用**，产出分级清理报告，并沉淀了执行清理阶段的实战坑。
+---
 
-## What it does / 做什么
+## 使用方法 / How to use
 
-1. **Audit (default) / 默认只审查** — scans in 4 batches (user profile → system dirs → drill-down → targeted cache paths), then produces a graded report:
-   - 🟢 A — zero-risk caches/temp (pip/npm cache, Temp, CrashDumps…)
-   - 🟡 B — residue to delete after confirmation (`*-updater` dirs, installer caches, old migration backups)
-   - 🔵 C — big-but-valuable data/software (chat history, games, dev tools → migrate or uninstall)
-   - 🔴 D — never touch (`Windows\Installer`, `WinSxS`, `Package Cache`, `swapfile.sys`)
-   - ⚙️ E — system-level reclaim needing admin (DISM component cleanup, `$WINDOWS.~BT` via Settings)
-2. **Cleanup (only after explicit user confirmation) / 用户确认后才清理** — backup personal dirs to another drive first (robocopy + file-count verification), batch ≤10 items, verify after each batch.
+### 1. 安装 / Install
 
-## Why not just run a disk-cleaner? / 为什么不用现成清理工具
-
-The skill encodes non-obvious pitfalls found in real runs:
-
-- **PowerShell tool stdout may silently return empty** — probe first, fall back to `Out-File` + Read.
-- **Whole-disk hashtable aggregation OOMs** — scan by batches of `Measure-Object` sums instead (scripts included).
-- **Junctions/aliases lie** (`.codex → E:`, `All Users → ProgramData`) — detect via `LinkType` to avoid double counting.
-- **Deletion ≠ freed space**: sandboxed delete hooks may route removals into the Recycle Bin — 15 GB deleted, 0 GB freed, then 13.76 GB found in `C:\$Recycle.Bin`. Always re-measure free space per batch and finish with `Clear-RecycleBin` (with user consent).
-- **Unknown big dirs** (e.g. `%LOCALAPPDATA%\<GUID>\…`) — report facts, suggest rename-and-observe for a week instead of guessing.
-
-## Install / 安装
-
-Copy to the WorkBuddy skills directory:
+把整个文件夹复制到 WorkBuddy 技能目录：
 
 ```
-C:\Users\<you>\.workbuddy\skills\windows-disk-space-audit\
-├── SKILL.md
+C:\Users\<你>\.workbuddy\skills\windows-disk-space-audit\
+├── SKILL.md        # 技能主文件（流程 + 分级标准 + 实战坑）
 └── scripts\
-    ├── batchA.ps1   # user profile / AppData direct children
+    ├── batchA.ps1   # 用户目录 / AppData 直接子目录扫描
     ├── batchB.ps1   # Windows / Program Files / ProgramData / Users
-    ├── batchC.ps1   # drill-down into >1 GB dirs
-    └── batchD.ps1   # targeted temp/cache/system-residue paths
+    ├── batchC.ps1   # 对 >1 GB 大目录再钻一层
+    └── batchD.ps1   # 定点：临时目录 / 缓存 / 回收站 / 系统残留
 ```
 
-Then just ask your agent: "C盘快满了，看看哪些能清理".
+Copy the folder into your WorkBuddy skills directory (path above). No dependencies — only PowerShell 5.1 and Python (optional, for Unicode-safe name checks).
 
-## Safety / 安全约定
+### 2. 触发提示词 / Prompt triggers
 
-- Default is **read-only**. No deletions without explicit user confirmation of a listed target.
-- Personal-directory deletions are always preceded by a full backup to another drive + file-count verification.
-- `Windows\Installer`, `WinSxS`, `System32`, `ProgramData\Package Cache` are hard no-go zones.
+装好后在 WorkBuddy 里对 Agent 说任意一句：
+
+| 场景 | 提示词示例 |
+|---|---|
+| 审查（默认只读） | 「C盘快满了，看看哪些能清理」 |
+| 审查 | 「帮我排查一下磁盘占用」 |
+| 审查 | 「看看 C 盘空间不够了怎么办」 |
+| 清理（审查确认后） | 「B 类帮我清理掉」 |
+| 清理 | 「把这个软件删了」（会先备份再删） |
+
+Ask your agent in plain language — e.g. *"My C: drive is almost full, what can be cleaned up?"* The skill defaults to **read-only audit**; deletion only happens after you confirm the listed targets.
+
+### 3. 典型工作流 / Typical workflow
+
+```
+你说「C盘快满了」
+   ↓
+Agent 分四批扫描（每批 3~5 分钟，后台运行）
+   ↓
+产出分级报告：🟢零风险缓存 / 🟡确认后删 / 🔵建议迁移卸载 / 🔴绝对不碰 / ⚙️系统级回收
+   ↓
+你勾选要删的项目（如「B 类清掉」）
+   ↓
+Agent 备份 → 分批删除（每批 ≤10 个）→ 逐批核对剩余空间 → 清空回收站
+```
+
+---
+
+## 它做什么 / What it does
+
+1. **审查（默认）/ Audit (default)**：只读扫描，产出分级报告，报告开头明确"仅审查，未做任何删除或移动"。
+   - 🟢 A 类 — 零风险缓存/临时文件（pip/npm 缓存、Temp、CrashDumps、旧迁移备份）
+   - 🟡 B 类 — 确认后可删的残留（`*-updater` 旧安装包、安装解压缓存、多版本并存目录）
+   - 🔵 C 类 — 大户但是数据/软件（聊天记录、游戏、开发工具 → 建议迁移或卸载）
+   - 🔴 D 类 — 绝对不要碰（`Windows\Installer`、`WinSxS`、`Package Cache`、`swapfile.sys`）
+   - ⚙️ E 类 — 需管理员的系统级回收（DISM 组件清理、`$WINDOWS.~BT` 交系统设置）
+2. **清理（用户明确确认后）/ Cleanup (only after explicit confirmation)**：个人目录**先备份到另一块盘**（robocopy + 文件数逐项校验）→ 分批删除（每批 ≤10 个）→ 逐批验证 → 清空回收站。
+
+## 为什么不用现成清理工具 / Why not just run a disk-cleaner?
+
+这个技能沉淀了真实跑出来的非显而易见的坑：
+
+- **PowerShell 工具 stdout 可能静默为空** — 先探测，失败就 `Out-File` 落盘再用 Read 读。
+- **全盘 hashtable 聚合会内存溢出** — 改用"按父目录分批 Measure-Object 求和"（脚本已附带）。
+- **junction/别名链接会骗人**（`.codex → E:`、`All Users → ProgramData`）— 用 `LinkType` 识别，避免重复计算。
+- **删了 ≠ 释放了**：沙箱删除钩子可能把删除转进回收站——实测删 15 GB 空间纹丝不动，最后在 `C:\$Recycle.Bin` 里翻出 13.76 GB。每批删除后必须重新量剩余空间，收尾经用户同意 `Clear-RecycleBin`。
+- **认不出的大目录**（如 `%LOCALAPPDATA%\<GUID>\…`）— 报事实不猜死，建议**改名观察一周**。
+- **权限规则拦截就尊重**：agent 应用自己的数据目录（如 `.workbuddy\logs`）被规则保护时不重试、不绕路。
+
+## 安全约定 / Safety guarantees
+
+- 默认**只读**，未经用户确认绝不删除任何东西。
+- 个人目录删除前**必须**先整目录备份到另一块盘并校验文件数一致。
+- `Windows\Installer`、`WinSxS`、`System32`、`ProgramData\Package Cache` 是硬性禁区。
+- 分寸细节（如 `$WINDOWS.~BT` 最近仍被写入时交给系统设置处理）见 `SKILL.md`。
 
 ## License
 
