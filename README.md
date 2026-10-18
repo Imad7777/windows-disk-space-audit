@@ -1,8 +1,8 @@
 # windows-disk-space-audit
 
-A [WorkBuddy](https://www.workbuddy.cn) agent skill for **read-only Windows disk space auditing** (focused on the C: drive), with a graded cleanup report and battle-tested execution pitfalls.
+An agent skill for **read-only Windows disk space auditing** (focused on the C: drive), with a graded cleanup report and battle-tested execution pitfalls. Works with **any agent platform that reads the `SKILL.md` convention** — WorkBuddy, Claude Code, Codex CLI, etc.
 
-一个 [WorkBuddy](https://www.workbuddy.cn) Agent 技能：**只读审查 Windows 磁盘（尤其 C 盘）空间占用**，产出分级清理报告，并沉淀了执行清理阶段的实战坑。
+一个 Windows 磁盘空间审查 Agent 技能：**只读审查 Windows 磁盘（尤其 C 盘）空间占用**，产出分级清理报告，并沉淀了执行清理阶段的实战坑。适用于**任何支持 `SKILL.md` 约定的 Agent 平台**——WorkBuddy、Claude Code、Codex 等。
 
 ---
 
@@ -12,10 +12,18 @@ A [WorkBuddy](https://www.workbuddy.cn) agent skill for **read-only Windows disk
 
 ### 1. Install
 
-Copy the whole folder into your WorkBuddy skills directory:
+Copy the whole folder into your platform's skills directory:
+
+| Platform | Path |
+|---|---|
+| WorkBuddy | `C:\Users\<you>\.workbuddy\skills\windows-disk-space-audit\` |
+| Claude Code | `~/.claude/skills/windows-disk-space-audit/` |
+| Codex / others | your platform's skills/prompts directory (per its convention) |
+
+Folder contents:
 
 ```
-C:\Users\<you>\.workbuddy\skills\windows-disk-space-audit\
+windows-disk-space-audit\
 ├── SKILL.md        # Main skill file (workflow + grading standard + pitfalls)
 └── scripts\
     ├── batchA.ps1   # Scan direct children of USERPROFILE / AppData
@@ -28,7 +36,7 @@ No dependencies — only PowerShell 5.1 and Python (optional, for Unicode-safe n
 
 ### 2. Prompt triggers
 
-Once installed, just talk to your WorkBuddy agent in plain language:
+Once installed, just talk to your agent in plain language:
 
 | Scenario | Prompt example |
 |---|---|
@@ -95,10 +103,18 @@ This skill captures non-obvious pitfalls learned from real runs:
 
 ### 1. 安装
 
-把整个文件夹复制到 WorkBuddy 技能目录：
+把整个文件夹复制到所在平台的技能目录：
+
+| 平台 | 路径 |
+|---|---|
+| WorkBuddy | `C:\Users\<你>\.workbuddy\skills\windows-disk-space-audit\` |
+| Claude Code | `~/.claude/skills/windows-disk-space-audit/` |
+| Codex 等 | 各平台约定的技能/提示词目录 |
+
+目录结构：
 
 ```
-C:\Users\<你>\.workbuddy\skills\windows-disk-space-audit\
+windows-disk-space-audit\
 ├── SKILL.md        # 技能主文件（流程 + 分级标准 + 实战坑）
 └── scripts\
     ├── batchA.ps1   # 用户目录 / AppData 直接子目录扫描
@@ -111,7 +127,7 @@ C:\Users\<你>\.workbuddy\skills\windows-disk-space-audit\
 
 ### 2. 触发提示词
 
-装好后在 WorkBuddy 里对 Agent 用自然语言说一句话即可触发：
+装好后在你的 Agent 平台里用自然语言说一句话即可触发：
 
 | 场景 | 提示词示例 |
 |---|---|
