@@ -53,17 +53,6 @@ per batch → empties the recycle bin
 
 **2. Cleanup (only after explicit confirmation)** — Personal directories are **backed up to another drive first** (robocopy + per-file-count verification) → deleted in batches (≤10 each) → verified per batch → recycle bin emptied.
 
-## Hard-won pitfalls from real runs
-
-These are non-obvious pitfalls captured from actual cleanup runs:
-
-- **The PowerShell tool's stdout can silently come back empty** — probe first; on failure, write output to a file with `Out-File` and read it back.
-- **Aggregating the whole drive into one hashtable can OOM** — instead sum per parent directory with batched `Measure-Object` (scripts included).
-- **Junctions/alias links lie** (`.codex → E:`, `All Users → ProgramData`) — detect with `LinkType` to avoid double counting.
-- **Deleted ≠ freed**: sandbox delete hooks may redirect deletions into the recycle bin — in one real run, 15 GB deleted with zero free-space change; 13.76 GB was later found in `C:\$Recycle.Bin`. Re-measure free space after every batch, and empty the recycle bin with user consent at the end.
-- **Unidentifiable large directories** (e.g. `%LOCALAPPDATA%\<GUID>\…`) — report facts without guessing; suggest renaming and observing for a week.
-- **Respect permission blocks**: when the agent app's own data dirs (e.g. `.workbuddy\logs`) are protected by rules, don't retry or route around them.
-
 ## Safety guarantees
 
 - Read-only by default; never deletes anything without explicit user confirmation.
@@ -116,17 +105,6 @@ Agent 备份 → 分批删除（每批 ≤10 个）→ 逐批核对剩余空间 
 - ⚙️ **E 类** — 需管理员的系统级回收（DISM 组件清理、`$WINDOWS.~BT` 交系统设置）
 
 **2. 清理（用户明确确认后）** — 个人目录**先备份到另一块盘**（robocopy + 文件数逐项校验）→ 分批删除（每批 ≤10 个）→ 逐批验证 → 清空回收站。
-
-## 实战踩过的坑
-
-这个技能沉淀了真实跑出来的非显而易见的坑：
-
-- **PowerShell 工具 stdout 可能静默为空** — 先探测，失败就 `Out-File` 落盘再用 Read 读。
-- **全盘 hashtable 聚合会内存溢出** — 改用"按父目录分批 Measure-Object 求和"（脚本已附带）。
-- **junction/别名链接会骗人**（`.codex → E:`、`All Users → ProgramData`）— 用 `LinkType` 识别，避免重复计算。
-- **删了 ≠ 释放了**：沙箱删除钩子可能把删除转进回收站——实测删 15 GB 空间纹丝不动，最后在 `C:\$Recycle.Bin` 里翻出 13.76 GB。每批删除后必须重新量剩余空间，收尾经用户同意 `Clear-RecycleBin`。
-- **认不出的大目录**（如 `%LOCALAPPDATA%\<GUID>\…`）— 报事实不猜死，建议**改名观察一周**。
-- **权限规则拦截就尊重**：agent 应用自己的数据目录（如 `.workbuddy\logs`）被规则保护时不重试、不绕路。
 
 ## 安全约定
 
