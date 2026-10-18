@@ -15,7 +15,7 @@ description: 只读审查 Windows 磁盘（尤其 C 盘)空间占用，定位可
    - 这条是决定性坑，先解决它再开始扫描。
 2. **脚本文件保持纯 ASCII**，中文标题会让 Windows PowerShell 5.1 读乱。
 3. 用 `powershell -ExecutionPolicy Bypass -File <script>` 调用，脚本放工作区。
-4. 后台运行（run_in_background），单个脚本控制在 3~5 分钟。
+4. 长任务放后台运行（如所在平台支持后台执行，如 `run_in_background`），单个脚本控制在 3~5 分钟。
 5. **目录名含中文时**，PowerShell 输出会乱码。要拿真实名称/精确核对，用 Python `os.listdir` / `os.walk`（Unicode 安全）。
 
 ## 扫描策略（关键：分块，不要全盘单遍）
@@ -40,7 +40,7 @@ function DirMB($p) {
 | A | `%USERPROFILE%`、`AppData\Local`、`AppData\Roaming` 的**直接子目录** | `scripts/batchA.ps1` |
 | B | `C:\Windows`、`C:\Program Files`、`C:\Program Files (x86)`、`C:\ProgramData`、`C:\Users` 的直接子目录 | `scripts/batchB.ps1` |
 | C | A/B 中 >1 GB 的目录，再往下钻一层 | `scripts/batchC.ps1` |
-| D | 定点：临时目录、回收站、`$WINDOWS.~BT`、pip/uv/npm 缓存、浏览器缓存、`.config`/`.workbuddy` 日志、根目录系统文件 | `scripts/batchD.ps1` |
+| D | 定点：临时目录、回收站、`$WINDOWS.~BT`、pip/uv/npm 缓存、浏览器缓存、`.config` 与各 agent 应用日志目录（如 `.workbuddy`、`.codex`、`.claude`）、根目录系统文件 | `scripts/batchD.ps1` |
 
 ### 必查的定点路径
 
@@ -58,7 +58,8 @@ C:\Windows\Logs / Minidump / LiveKernelReports
 %LOCALAPPDATA%\Packages
 %LOCALAPPDATA%\Programs
 %APPDATA%\<各大厂目录>
-%USERPROFILE%\.cache / .config / .workbuddy / .gradle / .m2 / .nuget / .codex
+%USERPROFILE%\.cache / .config / .gradle / .m2 / .nuget
+%USERPROFILE%\ 各 agent 应用数据目录（.workbuddy / .codex / .claude 等，实测存在的才扫）
 C:\$Recycle.Bin
 C:\$WINDOWS.~BT
 C:\Windows.old
@@ -101,13 +102,13 @@ C:\Windows\Installer
 2. **沙箱删除钩子（safe-delete）**：托管 Python 环境常给 `os.remove` 打了 safe-delete 补丁，单文件删除被转成回收站操作；C 盘近满时 trash 自身会失败并刷屏 `SAFE_DELETE_FAIL_CLOSED`。
    - **整目录删除用 `shutil.rmtree`**（实测可绕过钩子，直接删）。
    - 单文件清理改用 PowerShell `Remove-Item`（不走 Python 钩子）。
-3. **权限规则可能拦截特定目录**（如 agent 应用自己的数据目录 `.workbuddy\logs`）。被拦就**尊重、不重试、不绕路**，向用户报告并跳过——那部分通常只剩几百 MB，不值得对抗规则。
+3. **权限规则可能拦截特定目录**（如 agent 应用自身的数据目录，如 `.workbuddy\logs`、`.codex\log` 等）。被拦就**尊重、不重试、不绕路**，向用户报告并跳过——那部分通常只剩几百 MB，不值得对抗规则。
 4. **个人目录删除前先备份到另一块盘**：`robocopy <src> <dst> /E /R:1 /W:1 /NFL /NDL /NP`，然后**用 Python 逐一核对目录数/文件数/字节数完全一致**再删原件。退出码 1 = 正常复制；≥8 才是真错误。
 5. **删除永远每批 ≤10 个目标、逐批验证、失败即停**；软件目录宁可先备份再删，也不要信任"用户说直接删"就裸删。
 6. **任务期间 C 盘可能有其他进程在写**（浏览器/WPS/云盘），前后对比空间时要留出 ±1-2 GB 的噪声。
 
 ## 交付
 
-- Markdown 报告（顶层占用表 + 分级清单 + 结论与执行顺序）写进工作区，用 present_files 呈现。
+- Markdown 报告（顶层占用表 + 分级清单 + 结论与执行顺序）写进工作区，用所在平台的结果呈现方式交付（如 WorkBuddy 的 present_files；无此工具则直接给出报告文件路径）。
 - 报告开头明确"仅审查，未做任何删除或移动"。
-- 用户确认要清理后，按 personal_files_safety 规则执行：**先备份、走回收站、每批 ≤10 个、逐批验证**。
+- 用户确认要清理后，按所在平台的个人文件安全规则执行（无专用规则则按最小破坏原则）：**先备份、走回收站、每批 ≤10 个、逐批验证**。
