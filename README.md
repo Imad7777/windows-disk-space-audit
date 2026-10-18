@@ -10,33 +10,9 @@ An agent skill for **read-only Windows disk space auditing** (focused on the C: 
 
 ## How to use
 
-### 1. Install
+### 1. Prompt triggers
 
-Copy the whole folder into your platform's skills directory:
-
-| Platform | Path |
-|---|---|
-| WorkBuddy | `C:\Users\<you>\.workbuddy\skills\windows-disk-space-audit\` |
-| Claude Code | `~/.claude/skills/windows-disk-space-audit/` |
-| Codex / others | your platform's skills/prompts directory (per its convention) |
-
-Folder contents:
-
-```
-windows-disk-space-audit\
-├── SKILL.md        # Main skill file (workflow + grading standard + pitfalls)
-└── scripts\
-    ├── batchA.ps1   # Scan direct children of USERPROFILE / AppData
-    ├── batchB.ps1   # Windows / Program Files / ProgramData / Users
-    ├── batchC.ps1   # Drill one level deeper into >1 GB directories
-    └── batchD.ps1   # Targeted: temp dirs / caches / recycle bin / system leftovers
-```
-
-No dependencies — only PowerShell 5.1 and Python (optional, for Unicode-safe name checks).
-
-### 2. Prompt triggers
-
-Once installed, just talk to your agent in plain language:
+Just talk to your agent in plain language:
 
 | Scenario | Prompt example |
 |---|---|
@@ -48,7 +24,7 @@ Once installed, just talk to your agent in plain language:
 
 The skill defaults to a **read-only audit**; deletion happens only after you review the report and explicitly confirm the targets.
 
-### 3. Typical workflow
+### 2. Typical workflow
 
 ```
 You say "C: is almost full"
@@ -101,33 +77,9 @@ This skill captures non-obvious pitfalls learned from real runs:
 
 ## 使用方法
 
-### 1. 安装
+### 1. 触发提示词
 
-把整个文件夹复制到所在平台的技能目录：
-
-| 平台 | 路径 |
-|---|---|
-| WorkBuddy | `C:\Users\<你>\.workbuddy\skills\windows-disk-space-audit\` |
-| Claude Code | `~/.claude/skills/windows-disk-space-audit/` |
-| Codex 等 | 各平台约定的技能/提示词目录 |
-
-目录结构：
-
-```
-windows-disk-space-audit\
-├── SKILL.md        # 技能主文件（流程 + 分级标准 + 实战坑）
-└── scripts\
-    ├── batchA.ps1   # 用户目录 / AppData 直接子目录扫描
-    ├── batchB.ps1   # Windows / Program Files / ProgramData / Users
-    ├── batchC.ps1   # 对 >1 GB 大目录再钻一层
-    └── batchD.ps1   # 定点：临时目录 / 缓存 / 回收站 / 系统残留
-```
-
-无任何依赖——只需要 PowerShell 5.1 和 Python（可选，用于 Unicode 安全的目录名检查）。
-
-### 2. 触发提示词
-
-装好后在你的 Agent 平台里用自然语言说一句话即可触发：
+在你的 Agent 平台里用自然语言说一句话即可触发：
 
 | 场景 | 提示词示例 |
 |---|---|
@@ -139,7 +91,7 @@ windows-disk-space-audit\
 
 技能默认**只读审查**；只有当你看过报告、明确确认要删的目标之后，才会执行删除。
 
-### 3. 典型工作流
+### 2. 典型工作流
 
 ```
 你说「C盘快满了」
