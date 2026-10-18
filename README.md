@@ -53,9 +53,9 @@ per batch → empties the recycle bin
 
 **2. Cleanup (only after explicit confirmation)** — Personal directories are **backed up to another drive first** (robocopy + per-file-count verification) → deleted in batches (≤10 each) → verified per batch → recycle bin emptied.
 
-## Why not just run a disk-cleaner?
+## Hard-won pitfalls from real runs
 
-This skill captures non-obvious pitfalls learned from real runs:
+These are non-obvious pitfalls captured from actual cleanup runs:
 
 - **The PowerShell tool's stdout can silently come back empty** — probe first; on failure, write output to a file with `Out-File` and read it back.
 - **Aggregating the whole drive into one hashtable can OOM** — instead sum per parent directory with batched `Measure-Object` (scripts included).
@@ -117,7 +117,7 @@ Agent 备份 → 分批删除（每批 ≤10 个）→ 逐批核对剩余空间 
 
 **2. 清理（用户明确确认后）** — 个人目录**先备份到另一块盘**（robocopy + 文件数逐项校验）→ 分批删除（每批 ≤10 个）→ 逐批验证 → 清空回收站。
 
-## 为什么不用现成清理工具
+## 实战踩过的坑
 
 这个技能沉淀了真实跑出来的非显而易见的坑：
 
